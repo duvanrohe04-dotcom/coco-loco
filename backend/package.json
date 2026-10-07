@@ -1,0 +1,15 @@
+{
+  "name": "coco-loco-backend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "API de Coco Loco: cuentas, progreso en la nube y ranking.",
+  "main": "src/index.js",
+  "engines": { "node": ">=22.13" },
+  "scripts": {
+    "start": "node src/index.js",
+    "migrate": "node --no-warnings src/migrate.js",
+    "backup":"node --no-warnings src/backup.js",
+    "test": "node --test --no-warnings \"test/*.test.js\""
+  }
+}
