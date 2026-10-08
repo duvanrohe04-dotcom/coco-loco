@@ -1,5 +1,5 @@
 name: coco_loco
-description: Juego por niveles - atrapa los cachos.
+description: Juego por niveles - atrapa los cocos.
 publish_to: "none"
 version: 1.0.0+1
 
@@ -20,5 +20,3 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  assets:
-    - assets/characters/

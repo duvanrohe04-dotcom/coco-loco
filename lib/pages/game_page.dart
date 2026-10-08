@@ -216,60 +216,8 @@ class _Hud extends StatelessWidget {
     final level = engine.level;
     final boss = level.boss;
     return Padding(
-<<<<<<< HEAD
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
-=======
-      padding: const EdgeInsets.all(12),
-      child: Row(children: [
-        Material(
-          color: Colors.black.o(0.3),
-          shape: const CircleBorder(),
-          child: IconButton(
-            icon: const Icon(Icons.pause_rounded, color: Colors.white),
-            onPressed: () => engine.setPaused(true),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            decoration: BoxDecoration(color: Colors.black.o(0.3), borderRadius: BorderRadius.circular(18)),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-              Row(children: [
-                Expanded(child: Text(level.title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700))),
-                if (engine.streak >= 2)
-                  Transform.scale(
-                    scale: 1 + 0.35 * engine.comboFlash,
-                    child: Text(
-                      '🔥 Racha x${engine.streak}',
-                      style: TextStyle(color: Color.lerp(Colors.white, const Color(0xFFFFD84D), engine.comboFlash), fontWeight: FontWeight.w900),
-                    ),
-                  ),
-              ]),
-              const SizedBox(height: 6),
-              Row(children: [
-                const HornIcon(),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: LinearProgressIndicator(
-                      value: (engine.score / level.goal).clamp(0.0, 1.0),
-                      minHeight: 10,
-                      backgroundColor: Colors.white24,
-                      color: const Color(0xFFFFD84D),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                OutlinedText('${engine.score}/${level.goal}', size: 14),
-              ]),
-            ]),
-          ),
-        ),
-        const SizedBox(width: 12),
->>>>>>> 0427bd4736ec5ece677ee68fc23894bf19f90872
         Row(children: [
           Material(
             color: Colors.black.o(0.3),
