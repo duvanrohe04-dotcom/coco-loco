@@ -36,8 +36,8 @@ class MenuPage extends StatelessWidget {
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 640),
                     child: Column(children: [
-                      const OutlinedText('COCO LOCO', size: 44),
-                      const OutlinedText('atrapa la lluvia de cocos', size: 18),
+                      const OutlinedText('CACHO LOCO', size: 44),
+                      const OutlinedText('atrapa la lluvia de cachos', size: 18),
                       const SizedBox(height: 14),
                       const _CharacterPicker(),
                       const SizedBox(height: 16),

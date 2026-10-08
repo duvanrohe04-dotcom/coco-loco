@@ -113,11 +113,16 @@ class GameEngine extends ChangeNotifier {
   double facing = 1;
   double walkPhase = 0;
   double energy = 0; // 0 quieto .. 1 corriendo
+<<<<<<< HEAD
   double happy = 0; // pulso al atrapar algo bueno
+=======
+  double happy = 0; // pulso al atrapar un cacho
+>>>>>>> 0427bd4736ec5ece677ee68fc23894bf19f90872
   double hurt = 0; // pulso al perder una vida
   double shake = 0; // temblor de pantalla (0..1)
   double elapsed = 0;
 
+<<<<<<< HEAD
   /// Distancia recorrida por el mundo (para mover el suelo y las palmeras).
   double worldScroll = 0;
 
@@ -125,6 +130,9 @@ class GameEngine extends ChangeNotifier {
   double bossHit = 0, bossAttack = 0;
 
   /// Racha: cocos seguidos sin fallar. Cada [streakBonusEvery] da +1 punto extra.
+=======
+  /// Racha: cachos seguidos sin fallar. Cada [streakBonusEvery] da +1 punto extra.
+>>>>>>> 0427bd4736ec5ece677ee68fc23894bf19f90872
   static const int streakBonusEvery = 5;
   int streak = 0;
   int bestStreak = 0;
