@@ -56,6 +56,9 @@ class Session extends ChangeNotifier {
 
   /// Lee los perfiles guardados y retoma la última sesión.
   Future<void> load() async {
+    // Puede llamarse de nuevo (reintento al arrancar): empieza limpio para no duplicar perfiles.
+    profiles.clear();
+    current = null;
     try {
       final prefs = _prefs = await SharedPreferences.getInstance();
       for (final raw in prefs.getStringList(_kProfiles) ?? const <String>[]) {
@@ -78,7 +81,9 @@ class Session extends ChangeNotifier {
     } catch (_) {
       // Sin almacenamiento (modo privado, etc.): se juega igual, sin guardar.
     }
-    selectedCharacter.addListener(_onCharacterChanged);
+    selectedCharacter
+      ..removeListener(_onCharacterChanged)
+      ..addListener(_onCharacterChanged);
     progress.onRecorded = _pushProgress;
     if (isOnline) unawaited(syncNow()); // sin esperar: el juego abre al instante
   }

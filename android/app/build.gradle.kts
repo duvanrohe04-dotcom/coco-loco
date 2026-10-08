@@ -32,6 +32,14 @@ android {
         versionName = flutter.versionName
     }
 
+    // Un solo APK para todos los celulares: solo ARM de 32 y 64 bits (ningún teléfono usa x86).
+    // Quita librerías x86 sueltas que traen algunos plugins y que harían creer que hay soporte x86.
+    packaging {
+        jniLibs {
+            excludes += setOf("lib/x86/**", "lib/x86_64/**")
+        }
+    }
+
     signingConfigs {
         if (keystoreProperties.containsKey("storeFile")) {
             create("release") {
@@ -46,8 +54,10 @@ android {
     buildTypes {
         release {
             signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
-            isMinifyEnabled = true
-            isShrinkResources = true
+            // Sin reducción de código (R8): no se pudo probar en un teléfono real y un plugin recortado
+            // por error provoca pantallas en blanco. El tamaño casi no cambia (lo grande es el motor).
+            isMinifyEnabled = false
+            isShrinkResources = false
         }
     }
 }

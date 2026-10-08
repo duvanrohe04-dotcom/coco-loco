@@ -48,12 +48,15 @@ jobs:
           API_URL: ${{ vars.API_URL }}
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
-          flutter build apk --release --split-per-abi \
-            --build-name="$VERSION" --build-number="$GITHUB_RUN_NUMBER" \
+          # Un solo APK para todos los celulares (32 y 64 bits). Se omite x86, que ningún teléfono usa.
+          # El número de compilación sube con cada ejecución, y empieza en 100 para quedar por encima
+          # de las APK de prueba, así Android permite actualizar encima sin desinstalar.
+          flutter build apk --release \
+            --target-platform android-arm,android-arm64 \
+            --build-name="$VERSION" --build-number="$((100 + GITHUB_RUN_NUMBER))" \
             --dart-define=API_URL="$API_URL"
           mkdir -p dist
-          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk "dist/coco-loco-$VERSION-arm64.apk"
-          cp build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk "dist/coco-loco-$VERSION-armv7.apk"
+          cp build/app/outputs/flutter-apk/app-release.apk "dist/coco-loco-$VERSION.apk"
 
       - name: Publicar Release
         uses: softprops/action-gh-release@v2
@@ -62,5 +65,5 @@ jobs:
           generate_release_notes: true
           body: |
             ## Instalar en Android
-            Descarga **`coco-loco-*-arm64.apk`** (casi todos los móviles actuales; si no instala, usa `armv7`),
+            Descarga **`coco-loco-*.apk`** (un solo archivo para todos los celulares Android),
             ábrelo en el teléfono y permite "instalar apps de origen desconocido".

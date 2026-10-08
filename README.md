@@ -18,7 +18,7 @@ android/    Proyecto Android     dist/      APKs listas para instalar
 
 ```bash
 # Prueba (sin backend)
-flutter build apk --release --split-per-abi
+flutter build apk --release --target-platform android-arm,android-arm64
 
 # Con backend desplegado (la URL debe ser https://)
 flutter build apk --release --split-per-abi --dart-define=API_URL=https://tu-api.onrender.com
