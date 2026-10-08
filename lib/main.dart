@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import 'core/session.dart';
-import 'game/photo_painter.dart';
 import 'pages/login_page.dart';
 import 'pages/menu_page.dart';
 
@@ -28,8 +27,7 @@ class _BootState extends State<_Boot> {
   late Future<void> _init = _start();
   bool _skip = false;
 
-  // Perfiles guardados y fotos de los personajes, a la vez.
-  Future<void> _start() => Future.wait([session.load(), CharacterPhotos.load()]).timeout(const Duration(seconds: 8));
+  Future<void> _start() => session.load().timeout(const Duration(seconds: 8));
 
   void _retry() => setState(() => _init = _start());
 
@@ -41,7 +39,7 @@ class _BootState extends State<_Boot> {
       builder: (context, snap) {
         if (snap.connectionState == ConnectionState.done && !snap.hasError) return const CocosApp();
         return MaterialApp(
-          title: 'Cacho Loco',
+          title: 'Coco Loco',
           debugShowCheckedModeBanner: false,
           theme: _theme,
           home: _BootScreen(
@@ -74,7 +72,7 @@ class _BootScreen extends StatelessWidget {
                 padding: const EdgeInsets.all(24),
                 child: Column(mainAxisSize: MainAxisSize.min, children: [
                   const Text(
-                    'CACHO LOCO',
+                    'COCO LOCO',
                     style: TextStyle(fontSize: 40, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 1, shadows: [Shadow(blurRadius: 8, color: Color(0xFF1C3F7A))]),
                   ),
                   const SizedBox(height: 24),
@@ -109,7 +107,7 @@ class CocosApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => MaterialApp(
-        title: 'Cacho Loco',
+        title: 'Coco Loco',
         debugShowCheckedModeBanner: false,
         theme: _theme,
         // Sin sesión se muestra el login; al entrar o salir, la pantalla cambia sola.

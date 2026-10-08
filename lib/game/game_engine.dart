@@ -60,11 +60,11 @@ class GameEngine extends ChangeNotifier {
   double facing = 1;
   double walkPhase = 0;
   double energy = 0; // 0 quieto .. 1 corriendo
-  double happy = 0; // pulso al atrapar un cacho
+  double happy = 0; // pulso al atrapar un coco
   double hurt = 0; // pulso al perder una vida
   double elapsed = 0;
 
-  /// Racha: cachos seguidos sin fallar. Cada [streakBonusEvery] da +1 punto extra.
+  /// Racha: cocos seguidos sin fallar. Cada [streakBonusEvery] da +1 punto extra.
   static const int streakBonusEvery = 5;
   int streak = 0;
   int bestStreak = 0;

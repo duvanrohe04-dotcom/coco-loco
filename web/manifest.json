@@ -1,11 +1,11 @@
 {
-    "name": "Cacho Loco",
-    "short_name": "Cacho Loco",
+    "name": "Coco Loco",
+    "short_name": "Coco Loco",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#4AA8E8",
     "theme_color": "#4AA8E8",
-    "description": "Atrapa los cachos antes de que caigan.",
+    "description": "Atrapa los cocos antes de que caigan.",
     "orientation": "any",
     "prefer_related_applications": false,
     "icons": [
