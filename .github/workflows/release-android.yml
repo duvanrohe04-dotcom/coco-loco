@@ -18,7 +18,8 @@ jobs:
     steps:
       - name: Aviso (sin clave de firma)
         if: env.HAS_KEYSTORE != 'true'
-        run: echo "::notice::Sin secreto KEYSTORE_BASE64: no se compila la APK automática. Sube el APK al Release a mano o configura los secretos (ver README)."
+        run: |
+          echo "::notice::Sin secreto KEYSTORE_BASE64, no se compila la APK automática. Sube el APK al Release a mano o configura los secretos (ver README)."
 
       - uses: actions/checkout@v4
         if: env.HAS_KEYSTORE == 'true'
