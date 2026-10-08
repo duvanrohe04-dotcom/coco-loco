@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import '../core/color_ext.dart';
 import '../core/api.dart';
 import '../core/progress.dart';
+import '../core/sound.dart';
+import '../core/synth.dart';
+import '../ui/sound_controls.dart';
 import 'leaderboard_page.dart';
 import '../core/session.dart';
 import '../ui/character_avatar.dart';
@@ -16,8 +19,10 @@ import 'game_page.dart';
 class MenuPage extends StatelessWidget {
   const MenuPage({super.key});
 
-  void _play(BuildContext context, Level level) =>
-      Navigator.push(context, MaterialPageRoute<void>(builder: (_) => GamePage(level: level)));
+  void _play(BuildContext context, Level level) {
+    Sound.instance.play(Sfx.click);
+    Navigator.push(context, MaterialPageRoute<void>(builder: (_) => GamePage(level: level)));
+  }
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -64,21 +69,26 @@ class MenuPage extends StatelessWidget {
               ),
               const Positioned(left: 24, bottom: 18, child: IgnorePointer(child: _IdleCharacter())),
               const Positioned(top: 8, right: 8, child: _ProfileChip()),
-              if (onlineEnabled)
-                Positioned(
-                  top: 8,
-                  left: 8,
-                  child: Material(
-                    color: Colors.white.o(0.92),
-                    shape: const CircleBorder(),
-                    elevation: 3,
-                    child: IconButton(
-                      tooltip: 'Ranking',
-                      icon: const Icon(Icons.emoji_events_rounded, color: Color(0xFFE9A400)),
-                      onPressed: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const LeaderboardPage())),
+              Positioned(
+                top: 8,
+                left: 8,
+                child: Row(children: [
+                  const SoundButton(),
+                  if (onlineEnabled) ...[
+                    const SizedBox(width: 8),
+                    Material(
+                      color: Colors.white.o(0.92),
+                      shape: const CircleBorder(),
+                      elevation: 3,
+                      child: IconButton(
+                        tooltip: 'Ranking',
+                        icon: const Icon(Icons.emoji_events_rounded, color: Color(0xFFE9A400)),
+                        onPressed: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const LeaderboardPage())),
+                      ),
                     ),
-                  ),
-                ),
+                  ],
+                ]),
+              ),
             ]),
           ),
         ),

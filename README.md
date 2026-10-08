@@ -33,6 +33,14 @@ Vista pseudo-3D: los objetos vienen desde el horizonte hacia ti y tú te mueves 
 - El generador de oleadas es **justo**: nunca pone dos premios seguidos imposibles de alcanzar (hay una prueba
   automática que lo comprueba) y las distancias de los patrones se miden en píxeles, igual en móvil que en PC.
 
+## Sonido
+
+Todo el audio (efectos y música tropical de fondo) **se genera por código** (`lib/core/synth.dart`), así que
+no hay archivos de audio ni derechos de autor de por medio. Suena al atrapar cocos, con los poderes, los golpes,
+las bombas, las rachas, la cuenta atrás y al ganar o perder. El altavoz del menú (o el interruptor de la pausa) lo
+silencia y la preferencia se guarda. La música se pausa con el juego, se hace lenta con la cámara lenta y se detiene
+si sales de la app. Para escuchar todos los sonidos en el PC: `OUT_DIR=sonidos flutter test tool/export_sounds.dart`.
+
 ## Dos modos de juego
 
 - **Sin servidor** (por defecto): perfiles locales en el dispositivo, sin contraseña.

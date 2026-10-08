@@ -4,11 +4,14 @@ import 'package:flutter/services.dart';
 
 import '../core/color_ext.dart';
 import '../core/progress.dart';
+import '../core/sound.dart';
+import '../core/synth.dart';
 import '../game/game_engine.dart';
 import '../game/item_painters.dart';
 import '../game/level.dart';
 import '../game/scene_painter.dart';
 import '../ui/outlined_text.dart';
+import '../ui/sound_controls.dart';
 
 class GamePage extends StatefulWidget {
   const GamePage({super.key, required this.level});
@@ -24,29 +27,77 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
   late final Ticker _ticker;
   Duration _last = Duration.zero;
   bool _recorded = false;
+  bool _wasPaused = false;
+  bool _wasSlow = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    // Vibración al atrapar algo bueno (suave) y al recibir un golpe (fuerte). En la web no hace nada.
-    _engine.onGood = () => HapticFeedback.selectionClick().catchError((Object _) {});
-    _engine.onHit = () => HapticFeedback.heavyImpact().catchError((Object _) {});
+    _engine.onEvent = _onEvent;
+    // Efectos listos antes de que empiece la cuenta atrás, y música de fondo mientras dura el nivel.
+    Sound.instance.preload(Sfx.values.where((s) => s != Sfx.click));
+    Sound.instance.startMusic();
     _ticker = createTicker(_tick)..start();
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    Sound.instance.stopMusic();
     _ticker.dispose();
     _engine.dispose();
     super.dispose();
   }
 
-  /// Si el jugador sale de la app o bloquea el teléfono, la partida se pausa sola.
+  /// Cada cosa que pasa en la partida suena y vibra (en la web y sin sonido no hace nada).
+  void _onEvent(GameEvent e) {
+    final sfx = switch (e) {
+      GameEvent.catchCoco => Sfx.catchCoco,
+      GameEvent.catchGolden => Sfx.golden,
+      GameEvent.powerUp => Sfx.powerUp,
+      GameEvent.blocked => Sfx.shieldBlock,
+      GameEvent.hitRock => Sfx.hit,
+      GameEvent.hitBomb => Sfx.bomb,
+      GameEvent.miss => Sfx.miss,
+      GameEvent.combo => Sfx.combo,
+      GameEvent.tick => Sfx.tick,
+      GameEvent.go => Sfx.go,
+      GameEvent.win => Sfx.win,
+      GameEvent.lose => Sfx.lose,
+    };
+    // Al terminar el nivel la música se apaga para que se oiga la fanfarria.
+    if (e == GameEvent.win || e == GameEvent.lose) Sound.instance.stopMusic();
+    Sound.instance.play(sfx);
+
+    Future<void>? haptic;
+    switch (e) {
+      case GameEvent.catchCoco:
+      case GameEvent.catchGolden:
+      case GameEvent.powerUp:
+      case GameEvent.combo:
+      case GameEvent.blocked:
+        haptic = HapticFeedback.selectionClick();
+      case GameEvent.hitRock:
+      case GameEvent.hitBomb:
+        haptic = HapticFeedback.heavyImpact();
+      case GameEvent.miss:
+        haptic = HapticFeedback.lightImpact();
+      case GameEvent.tick:
+      case GameEvent.go:
+      case GameEvent.win:
+      case GameEvent.lose:
+        break;
+    }
+    haptic?.catchError((Object _) {});
+  }
+
+  /// Si el jugador sale de la app o bloquea el teléfono, la partida y la música se pausan solas.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state != AppLifecycleState.resumed && _engine.status == GameStatus.playing) _engine.setPaused(true);
+    if (state == AppLifecycleState.resumed) return;
+    Sound.instance.pauseMusic();
+    if (_engine.status == GameStatus.playing) _engine.setPaused(true);
   }
 
   void _tick(Duration now) {
@@ -58,6 +109,17 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
     final right = kb.isLogicalKeyPressed(LogicalKeyboardKey.arrowRight) || kb.isLogicalKeyPressed(LogicalKeyboardKey.keyD);
     _engine.moveDir = (right ? 1 : 0) - (left ? 1 : 0);
     _engine.update(dt);
+
+    // La música sigue a la partida: se pausa con ella y se hace lenta con la cámara lenta.
+    if (_engine.paused != _wasPaused) {
+      _wasPaused = _engine.paused;
+      _wasPaused ? Sound.instance.pauseMusic() : Sound.instance.resumeMusic();
+    }
+    final slow = _engine.slowT > 0;
+    if (slow != _wasSlow) {
+      _wasSlow = slow;
+      Sound.instance.setMusicSlow(slow);
+    }
 
     if (!_recorded && _engine.status == GameStatus.won) {
       _recorded = true;
@@ -112,7 +174,9 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
 
   Widget _pauseCard() => _card([
         const Text('Pausa', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900)),
-        const SizedBox(height: 16),
+        const SizedBox(height: 8),
+        const SoundSwitch(),
+        const SizedBox(height: 8),
         FilledButton(onPressed: () => _engine.setPaused(false), child: const Text('Continuar')),
         TextButton(onPressed: () => Navigator.pop(context), child: const Text('Salir al menú')),
       ]);

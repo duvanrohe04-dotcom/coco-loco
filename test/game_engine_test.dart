@@ -196,6 +196,82 @@ void main() {
     });
   });
 
+  group('eventos (sonido y vibración)', () {
+    List<GameEvent> record(GameEngine e) {
+      final events = <GameEvent>[];
+      e.onEvent = events.add;
+      return events;
+    }
+
+    test('cada cosa que pasa produce su evento', () {
+      final cases = <(ItemKind, double?, GameEvent)>[
+        (ItemKind.coconut, null, GameEvent.catchCoco),
+        (ItemKind.golden, null, GameEvent.catchGolden),
+        (ItemKind.rock, null, GameEvent.hitRock),
+        (ItemKind.bomb, null, GameEvent.hitBomb),
+        (ItemKind.heart, null, GameEvent.powerUp),
+        (ItemKind.shield, null, GameEvent.powerUp),
+        (ItemKind.magnet, null, GameEvent.powerUp),
+        (ItemKind.slow, null, GameEvent.powerUp),
+        (ItemKind.double, null, GameEvent.powerUp),
+        (ItemKind.coconut, 0.9, GameEvent.miss), // pasa de largo
+      ];
+      for (final (kind, lane, expected) in cases) {
+        final e = make();
+        final events = record(e);
+        e.items.add(arriving(kind, lane ?? e.playerLane));
+        e.update(0.016);
+        expect(events, [expected], reason: '$kind');
+      }
+    });
+
+    test('el escudo emite "bloqueado" y no "golpe"', () {
+      final e = make()..shield = true;
+      final events = record(e);
+      e.items.add(arriving(ItemKind.rock, e.playerLane));
+      e.update(0.016);
+      expect(events, [GameEvent.blocked]);
+    });
+
+    test('la racha de cinco emite "combo" además de atrapar', () {
+      final e = make();
+      final events = record(e);
+      for (var i = 0; i < 5; i++) {
+        e.items.add(arriving(ItemKind.coconut, e.playerLane));
+        e.update(0.016);
+      }
+      expect(events.where((x) => x == GameEvent.combo).length, 1);
+      expect(events.where((x) => x == GameEvent.catchCoco).length, 5);
+      expect(events.sublist(events.length - 2), [GameEvent.catchCoco, GameEvent.combo], reason: 'el sonido de atrapar va antes que el de racha');
+    });
+
+    test('la cuenta atrás suena 3, 2, 1 y ¡ya! una sola vez cada uno', () {
+      final e = make(startDelay: 2.6);
+      final events = record(e);
+      for (var i = 0; i < 80; i++) {
+        e.update(0.05);
+      }
+      expect(events, [GameEvent.tick, GameEvent.tick, GameEvent.tick, GameEvent.go]);
+    });
+
+    test('ganar y perder avisan una sola vez', () {
+      final win = make()..score = levels.first.goal - 1;
+      final winEvents = record(win);
+      win.items.add(arriving(ItemKind.coconut, win.playerLane));
+      win.update(0.016);
+      win.update(0.016);
+      win.update(0.016);
+      expect(winEvents.where((x) => x == GameEvent.win).length, 1);
+
+      final lose = make()..lives = 1;
+      final loseEvents = record(lose);
+      lose.items.add(arriving(ItemKind.coconut, 0.9));
+      lose.update(0.016);
+      lose.update(0.016);
+      expect(loseEvents.where((x) => x == GameEvent.lose).length, 1);
+    });
+  });
+
   group('justicia del generador', () {
     test('nunca pone dos premios seguidos que sea imposible alcanzar', () {
       for (final size in const [Size(390, 844), Size(800, 451)]) {

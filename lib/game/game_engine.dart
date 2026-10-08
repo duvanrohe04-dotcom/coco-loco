@@ -10,6 +10,9 @@ enum ItemKind { coconut, golden, rock, bomb, heart, shield, magnet, slow, double
 
 enum GameStatus { playing, won, lost }
 
+/// Cosas que pasan en la partida y que la pantalla convierte en sonido y vibración.
+enum GameEvent { catchCoco, catchGolden, powerUp, blocked, hitRock, hitBomb, miss, combo, tick, go, win, lose }
+
 /// Un objeto en el mundo 3D: [lane] es su carril (-1 izquierda .. 1 derecha) y [z] su distancia
 /// (1 = en el horizonte, 0 = llega al jugador).
 class Item {
@@ -130,12 +133,12 @@ class GameEngine extends ChangeNotifier {
   /// -1 izquierda, 0 quieto, 1 derecha (teclado).
   double moveDir = 0;
 
-  /// Avisos para vibración/sonido (los conecta la pantalla de juego).
-  VoidCallback? onGood;
-  VoidCallback? onHit;
+  /// Aviso de cada [GameEvent] (la pantalla de juego lo usa para el sonido y la vibración).
+  void Function(GameEvent event)? onEvent;
 
   double _spawnTimer = 0;
   double _lastX = 0;
+  int _countStage = 4; // etapa de la cuenta atrás ya anunciada (3, 2, 1, 0 = ¡ya!)
 
   // ---- Geometría de la escena -------------------------------------------------
 
@@ -214,6 +217,12 @@ class GameEngine extends ChangeNotifier {
 
     if (countdown > 0) {
       countdown = max(0, countdown - dt);
+      // Anuncia cada etapa de la cuenta atrás una sola vez: 3, 2, 1 y "¡ya!".
+      final stage = countdown > 1.8 ? 3 : (countdown > 1.0 ? 2 : (countdown > 0.4 ? 1 : 0));
+      if (stage < _countStage) {
+        _countStage = stage;
+        onEvent?.call(stage == 0 ? GameEvent.go : GameEvent.tick);
+      }
       notifyListeners();
       return;
     }
@@ -229,8 +238,10 @@ class GameEngine extends ChangeNotifier {
 
     if (score >= level.goal) {
       status = GameStatus.won;
+      onEvent?.call(GameEvent.win);
     } else if (lives <= 0) {
       status = GameStatus.lost;
+      onEvent?.call(GameEvent.lose);
     }
     notifyListeners();
   }
@@ -431,7 +442,7 @@ class GameEngine extends ChangeNotifier {
 
     if (!caught) {
       if (it.points > 0) {
-        _loseLife(at, 'Perdido');
+        _loseLife(at, 'Perdido', GameEvent.miss);
       } else if (it.isHazard) {
         popups.add(Popup(cx + it.lane * fieldHalfW, groundY - 70, '¡Esquivada!', const Color(0xFF9DF0C0)));
       }
@@ -447,8 +458,8 @@ class GameEngine extends ChangeNotifier {
         bossHit = 1;
         _burst(at, it.kind == ItemKind.golden ? const Color(0xFFFFD84D) : const Color(0xFFFFFFFF), 10);
         popups.add(Popup(at.dx, at.dy - 40, '+$gained', it.kind == ItemKind.golden ? const Color(0xFFFFD84D) : const Color(0xFFFFFFFF)));
+        onEvent?.call(it.kind == ItemKind.golden ? GameEvent.catchGolden : GameEvent.catchCoco);
         _registerCatch(at);
-        onGood?.call();
       case ItemKind.rock:
         _hazardHit(at, stunned: false);
       case ItemKind.bomb:
@@ -475,7 +486,7 @@ class GameEngine extends ChangeNotifier {
     happy = 1;
     _burst(at, color, 14);
     popups.add(Popup(at.dx, at.dy - 40, text, color));
-    onGood?.call();
+    onEvent?.call(GameEvent.powerUp);
   }
 
   void _hazardHit(Offset at, {required bool stunned}) {
@@ -483,11 +494,11 @@ class GameEngine extends ChangeNotifier {
       shield = false;
       _burst(at, const Color(0xFF7FD4FF), 16);
       popups.add(Popup(at.dx, at.dy - 40, '¡Bloqueado!', const Color(0xFF7FD4FF)));
-      onGood?.call();
+      onEvent?.call(GameEvent.blocked);
       return;
     }
     if (stunned) stun = stunTime;
-    _loseLife(at, stunned ? '¡Bomba!' : '¡Ay!');
+    _loseLife(at, stunned ? '¡Bomba!' : '¡Ay!', stunned ? GameEvent.hitBomb : GameEvent.hitRock);
     shake = stunned ? 1 : 0.6;
   }
 
@@ -499,17 +510,18 @@ class GameEngine extends ChangeNotifier {
       comboFlash = 1;
       _burst(at, const Color(0xFFFFB800), 18);
       popups.add(Popup(at.dx, at.dy - 70, '¡Racha x$streak!', const Color(0xFFFFB800)));
+      onEvent?.call(GameEvent.combo);
     }
   }
 
-  void _loseLife(Offset at, String text) {
+  void _loseLife(Offset at, String text, GameEvent event) {
     streak = 0;
     lives--;
     hurt = 1;
     shake = max(shake, 0.5);
     _burst(at, const Color(0xFFFF5A5A), 10);
     popups.add(Popup(at.dx, at.dy - 40, text, const Color(0xFFFF6B6B)));
-    onHit?.call();
+    onEvent?.call(event);
   }
 
   // ---- Efectos ----------------------------------------------------------------

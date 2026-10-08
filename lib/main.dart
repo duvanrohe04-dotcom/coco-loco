@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import 'core/session.dart';
+import 'core/sound.dart';
 import 'pages/login_page.dart';
 import 'pages/menu_page.dart';
 
@@ -27,7 +28,8 @@ class _BootState extends State<_Boot> {
   late Future<void> _init = _start();
   bool _skip = false;
 
-  Future<void> _start() => session.load().timeout(const Duration(seconds: 8));
+  // Perfiles guardados y preferencia de sonido, a la vez.
+  Future<void> _start() => Future.wait([session.load(), Sound.instance.init()]).timeout(const Duration(seconds: 8));
 
   void _retry() => setState(() => _init = _start());
 
