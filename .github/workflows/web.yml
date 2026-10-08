@@ -50,6 +50,8 @@ jobs:
           rm -rf "$RUNNER_TEMP/dist"
           mkdir -p "$RUNNER_TEMP/dist"
           cp -r build/web "$RUNNER_TEMP/dist/site"
+          # Limpia el service worker viejo de los dispositivos que ya abrieron el juego.
+          cp deploy/web/cleanup_service_worker.js "$RUNNER_TEMP/dist/site/flutter_service_worker.js"
           cp deploy/web/Dockerfile nginx.conf "$RUNNER_TEMP/dist/"
           cd "$RUNNER_TEMP/dist"
           git init -q
