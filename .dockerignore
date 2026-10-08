@@ -1,0 +1,22 @@
+# Imagen de la app WEB: solo hacen falta lib/, web/ y pubspec.*
+# IMPORTANTE: android/ se excluye (contiene la clave de firma), igual que el resto de plataformas.
+.git
+.gitignore
+.github
+.idea
+.vscode
+.dart_tool/
+build/
+dist/
+android/
+ios/
+macos/
+linux/
+windows/
+backend/
+test/
+tool/
+*.md
+*.iml
+Dockerfile
+.dockerignore
