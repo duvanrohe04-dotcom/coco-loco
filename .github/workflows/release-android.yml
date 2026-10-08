@@ -1,6 +1,8 @@
 name: Release Android
 
-# Se ejecuta al subir una etiqueta de versión, por ejemplo:  git tag v1.0.1 && git push origin v1.0.1
+# Se ejecuta al subir una etiqueta de versión, por ejemplo:  git tag v1.0.3 && git push origin v1.0.3
+# Si el repositorio NO tiene configurado el secreto KEYSTORE_BASE64, el workflow se salta con un aviso
+# (no falla): útil mientras los Releases se suben a mano.
 on:
   push:
     tags: ['v*']
@@ -11,30 +13,43 @@ permissions:
 jobs:
   apk:
     runs-on: ubuntu-latest
+    env:
+      HAS_KEYSTORE: ${{ secrets.KEYSTORE_BASE64 != '' }}
     steps:
+      - name: Aviso (sin clave de firma)
+        if: env.HAS_KEYSTORE != 'true'
+        run: echo "::notice::Sin secreto KEYSTORE_BASE64: no se compila la APK automática. Sube el APK al Release a mano o configura los secretos (ver README)."
+
       - uses: actions/checkout@v4
+        if: env.HAS_KEYSTORE == 'true'
 
       - uses: actions/setup-java@v4
+        if: env.HAS_KEYSTORE == 'true'
         with:
           distribution: temurin
           java-version: '21'
 
       - uses: subosito/flutter-action@v2
+        if: env.HAS_KEYSTORE == 'true'
         with:
           channel: stable
           cache: true
 
-      - run: flutter pub get
-      - run: flutter analyze
-      - run: flutter test
+      - name: Dependencias y pruebas
+        if: env.HAS_KEYSTORE == 'true'
+        run: |
+          flutter pub get
+          flutter analyze
+          flutter test
 
       # La clave de firma vive en los secretos del repositorio, nunca en el código.
       - name: Preparar firma
+        if: env.HAS_KEYSTORE == 'true'
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
         run: |
-          test -n "$KEYSTORE_BASE64" || { echo "Falta el secreto KEYSTORE_BASE64"; exit 1; }
+          test -n "$KEYSTORE_PASSWORD" || { echo "Falta el secreto KEYSTORE_PASSWORD"; exit 1; }
           echo "$KEYSTORE_BASE64" | base64 --decode > android/upload-keystore.jks
           {
             echo "storePassword=$KEYSTORE_PASSWORD"
@@ -44,26 +59,29 @@ jobs:
           } > android/key.properties
 
       - name: Compilar APK
+        if: env.HAS_KEYSTORE == 'true'
         env:
           API_URL: ${{ vars.API_URL }}
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
           # Un solo APK para todos los celulares (32 y 64 bits). Se omite x86, que ningún teléfono usa.
-          # El número de compilación sube con cada ejecución, y empieza en 100 para quedar por encima
-          # de las APK de prueba, así Android permite actualizar encima sin desinstalar.
+          # El número de compilación sube con cada ejecución y empieza en 200, por encima de las APK
+          # de prueba, así Android permite actualizar encima sin desinstalar.
           flutter build apk --release \
             --target-platform android-arm,android-arm64 \
-            --build-name="$VERSION" --build-number="$((100 + GITHUB_RUN_NUMBER))" \
+            --build-name="$VERSION" --build-number="$((200 + GITHUB_RUN_NUMBER))" \
             --dart-define=API_URL="$API_URL"
           mkdir -p dist
           cp build/app/outputs/flutter-apk/app-release.apk "dist/coco-loco-$VERSION.apk"
 
       - name: Publicar Release
+        if: env.HAS_KEYSTORE == 'true'
         uses: softprops/action-gh-release@v2
         with:
           files: dist/*.apk
           generate_release_notes: true
           body: |
             ## Instalar en Android
-            Descarga **`coco-loco-*.apk`** (un solo archivo para todos los celulares Android),
+            Descarga **`coco-loco-*.apk`** (un solo archivo para todos los celulares Android 7 o superior),
             ábrelo en el teléfono y permite "instalar apps de origen desconocido".
+            Si ya tenías Coco Loco instalada, desinstálala antes.
