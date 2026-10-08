@@ -32,8 +32,10 @@ async function hashPassword(password, salt) {
  * @param {number} [opts.maxLevel=10]   niveles válidos para guardar progreso
  * @param {boolean} [opts.trustProxy]   leer la IP de X-Forwarded-For (detrás de un proxy)
  * @param {number} [opts.authLimit=15]  intentos de login/registro por IP cada 10 min
+ * @param {(line: string) => void} [opts.log]  registro de accesos (una línea por petición); null = silencio.
+ *        Solo se anota método, ruta (sin query), estado, duración e IP: nunca cuerpos ni cabeceras.
  */
-export function createApp({ dbPath, maxLevel = 10, trustProxy = false, authLimit = 15 }) {
+export function createApp({ dbPath, maxLevel = 10, trustProxy = false, authLimit = 15, log = null }) {
   const db = openDb(dbPath);
 
   const q = {
@@ -230,6 +232,16 @@ export function createApp({ dbPath, maxLevel = 10, trustProxy = false, authLimit
   };
 
   const server = http.createServer(async (req, res) => {
+    const started = process.hrtime.bigint();
+    const logPath = (req.url ?? '/').split('?')[0];
+    // /health se omite: el health check de Coolify lo consulta cada pocos segundos y llenaría el registro.
+    if (log && logPath !== '/health') {
+      res.on('finish', () => {
+        const ms = Number((process.hrtime.bigint() - started) / 1_000_000n);
+        log(`${req.method} ${logPath} ${res.statusCode} ${ms}ms ip=${clientIp(req)}`);
+      });
+    }
+
     const send = (status, body) => {
       const data = JSON.stringify(body);
       res.writeHead(status, {

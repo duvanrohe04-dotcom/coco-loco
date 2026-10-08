@@ -151,6 +151,22 @@ describe('ranking y robustez', () => {
     assert.equal(res.headers.get('access-control-allow-origin'), '*');
   });
 
+  it('registra cada petición sin datos sensibles y omite /health', async () => {
+    const lines = [];
+    const logged = createApp({ dbPath: ':memory:', log: (l) => lines.push(l) });
+    await new Promise((r) => logged.listen(0, '127.0.0.1', r));
+    const b = `http://127.0.0.1:${logged.address().port}`;
+    await fetch(`${b}/health`);
+    await fetch(`${b}/api/login?secreto=abc`, { method: 'POST', body: JSON.stringify({ username: 'nadie', password: 'MiClaveSecreta1' }) });
+    await fetch(`${b}/api/me`, { headers: { Authorization: 'Bearer ' + 'x'.repeat(43) } });
+    await new Promise((r) => logged.close(r));
+    assert.equal(lines.length, 2, lines.join(' | '));
+    assert.match(lines[0], /^POST \/api\/login 401 \d+ms ip=127\.0\.0\.1$/);
+    assert.match(lines[1], /^GET \/api\/me 401 \d+ms ip=/);
+    const all = lines.join('\n');
+    for (const secret of ['MiClaveSecreta1', 'secreto=abc', 'xxxxxxxx', 'Bearer']) assert.ok(!all.includes(secret), `filtró: ${secret}`);
+  });
+
   it('limita intentos de autenticación por IP', async () => {
     const limited = createApp({ dbPath: ':memory:', authLimit: 3 });
     await new Promise((r) => limited.listen(0, '127.0.0.1', r));
