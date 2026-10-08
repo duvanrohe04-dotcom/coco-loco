@@ -111,6 +111,14 @@ class _LevelCard extends StatelessWidget {
               boxShadow: [BoxShadow(color: Colors.black.o(0.25), blurRadius: 8, offset: const Offset(0, 4))],
             ),
             child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+              // Los jefes (5, 10, 15, 20) llevan una etiqueta para distinguirlos.
+              if (level.isBoss)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
+                  decoration: BoxDecoration(color: const Color(0xFFE5254F), borderRadius: BorderRadius.circular(8)),
+                  child: const Text('JEFE', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1)),
+                ),
               unlocked ? OutlinedText('${level.number}', size: 30) : const Icon(Icons.lock_rounded, color: Colors.white, size: 30),
               const SizedBox(height: 6),
               Row(mainAxisAlignment: MainAxisAlignment.center, children: [

@@ -97,11 +97,20 @@ describe('perfil y progreso', () => {
     assert.equal(up.json.streaks[1], 12);
   });
 
+  it('acepta los 20 niveles del juego', async () => {
+    const { json } = await register('prog20');
+    for (const level of [1, 10, 11, 20]) {
+      const r = await call('PUT', '/api/progress', { token: json.token, body: { level, stars: 2, streak: 5 } });
+      assert.equal(r.status, 200, `nivel ${level}`);
+      assert.equal(r.json.stars[level], 2);
+    }
+  });
+
   it('rechaza progreso fuera de rango', async () => {
     const { json } = await register('prog2');
     for (const body of [
       { level: 0, stars: 1 },
-      { level: 11, stars: 1 },
+      { level: 21, stars: 1 },
       { level: 1, stars: 4 },
       { level: 1, stars: -1 },
       { level: 1, stars: 1.5 },

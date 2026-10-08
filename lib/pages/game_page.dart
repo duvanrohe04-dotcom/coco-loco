@@ -19,7 +19,7 @@ class GamePage extends StatefulWidget {
   State<GamePage> createState() => _GamePageState();
 }
 
-class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin {
+class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   late final GameEngine _engine = GameEngine(widget.level);
   late final Ticker _ticker;
   Duration _last = Duration.zero;
@@ -28,14 +28,25 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    // Vibración al atrapar algo bueno (suave) y al recibir un golpe (fuerte). En la web no hace nada.
+    _engine.onGood = () => HapticFeedback.selectionClick().catchError((Object _) {});
+    _engine.onHit = () => HapticFeedback.heavyImpact().catchError((Object _) {});
     _ticker = createTicker(_tick)..start();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _ticker.dispose();
     _engine.dispose();
     super.dispose();
+  }
+
+  /// Si el jugador sale de la app o bloquea el teléfono, la partida se pausa sola.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed && _engine.status == GameStatus.playing) _engine.setPaused(true);
   }
 
   void _tick(Duration now) {
@@ -72,6 +83,7 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
                   child: ListenableBuilder(listenable: _engine, builder: (_, __) => _Hud(engine: _engine)),
                 ),
               ),
+              IgnorePointer(child: ListenableBuilder(listenable: _engine, builder: (_, __) => _Intro(engine: _engine))),
               ListenableBuilder(listenable: _engine, builder: (_, __) => _overlay()),
             ]),
           );
@@ -106,27 +118,30 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
       ]);
 
   Widget _endCard({required bool won}) {
-    final next = widget.level.number < levels.length ? levels[widget.level.number] : null;
+    final level = widget.level;
+    final next = level.number < levels.length ? levels[level.number] : null;
+    final title = won ? (level.isBoss ? '¡Derrotaste a ${level.boss!.name}!' : '¡Nivel completado!') : 'Se acabaron las vidas';
     return _card([
-      Text(won ? '¡Nivel completado!' : 'Se acabaron las vidas', style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w900)),
+      Text(title, textAlign: TextAlign.center, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w900)),
       const SizedBox(height: 10),
       if (won)
         Row(mainAxisSize: MainAxisSize.min, children: [
           for (var i = 0; i < 3; i++)
             Icon(i < _engine.stars ? Icons.star_rounded : Icons.star_outline_rounded, size: 44, color: const Color(0xFFFFB800)),
         ]),
-      if (_engine.bestStreak >= 2) ...[
-        const SizedBox(height: 8),
-        Text('🔥 Mejor racha: ${_engine.bestStreak}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-      ],
+      const SizedBox(height: 6),
+      Text('Puntos: ${_engine.score}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+      if (_engine.bestStreak >= 2) Text('🔥 Mejor racha: ${_engine.bestStreak}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+      if (won && next == null) const Padding(padding: EdgeInsets.only(top: 8), child: Text('¡Completaste todos los niveles!', style: TextStyle(fontWeight: FontWeight.w800))),
       const SizedBox(height: 16),
       if (won && next != null) FilledButton(onPressed: () => _goTo(next), child: const Text('Siguiente nivel')),
-      OutlinedButton(onPressed: () => _goTo(widget.level), child: const Text('Reintentar')),
+      OutlinedButton(onPressed: () => _goTo(level), child: const Text('Reintentar')),
       TextButton(onPressed: () => Navigator.pop(context), child: const Text('Menú')),
     ]);
   }
 }
 
+/// Barra superior: progreso (o vida del jefe), racha, vidas y poderes activos.
 class _Hud extends StatelessWidget {
   const _Hud({required this.engine});
 
@@ -135,61 +150,141 @@ class _Hud extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final level = engine.level;
+    final boss = level.boss;
     return Padding(
-      padding: const EdgeInsets.all(12),
-      child: Row(children: [
-        Material(
-          color: Colors.black.o(0.3),
-          shape: const CircleBorder(),
-          child: IconButton(
-            icon: const Icon(Icons.pause_rounded, color: Colors.white),
-            onPressed: () => engine.setPaused(true),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            decoration: BoxDecoration(color: Colors.black.o(0.3), borderRadius: BorderRadius.circular(18)),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-              Row(children: [
-                Expanded(child: Text(level.title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700))),
-                if (engine.streak >= 2)
-                  Transform.scale(
-                    scale: 1 + 0.35 * engine.comboFlash,
-                    child: Text(
-                      '🔥 Racha x${engine.streak}',
-                      style: TextStyle(color: Color.lerp(Colors.white, const Color(0xFFFFD84D), engine.comboFlash), fontWeight: FontWeight.w900),
-                    ),
-                  ),
-              ]),
-              const SizedBox(height: 6),
-              Row(children: [
-                const CoconutIcon(),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: LinearProgressIndicator(
-                      value: (engine.score / level.goal).clamp(0.0, 1.0),
-                      minHeight: 10,
-                      backgroundColor: Colors.white24,
-                      color: const Color(0xFFFFD84D),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                OutlinedText('${engine.score}/${level.goal}', size: 14),
-              ]),
-            ]),
-          ),
-        ),
-        const SizedBox(width: 12),
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
         Row(children: [
-          for (var i = 0; i < level.lives; i++)
-            Icon(i < engine.lives ? Icons.favorite_rounded : Icons.favorite_border_rounded, color: const Color(0xFFFF4D6D), size: 28),
+          Material(
+            color: Colors.black.o(0.3),
+            shape: const CircleBorder(),
+            child: IconButton(
+              tooltip: 'Pausa',
+              icon: const Icon(Icons.pause_rounded, color: Colors.white),
+              onPressed: () => engine.setPaused(true),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(color: Colors.black.o(0.3), borderRadius: BorderRadius.circular(18)),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+                Row(children: [
+                  Expanded(child: Text(level.title, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700))),
+                  if (engine.streak >= 2)
+                    Transform.scale(
+                      scale: 1 + 0.35 * engine.comboFlash,
+                      child: Text(
+                        '🔥 x${engine.streak}',
+                        style: TextStyle(color: Color.lerp(Colors.white, const Color(0xFFFFD84D), engine.comboFlash), fontWeight: FontWeight.w900),
+                      ),
+                    ),
+                ]),
+                const SizedBox(height: 6),
+                Row(children: [
+                  if (boss != null) const Text('👾', style: TextStyle(fontSize: 18)) else const CoconutIcon(),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: LinearProgressIndicator(
+                        // En un jefe la barra es SU vida: se vacía al atrapar cocos.
+                        value: boss != null ? 1 - engine.progress : engine.progress,
+                        minHeight: 10,
+                        backgroundColor: Colors.white24,
+                        color: boss != null ? const Color(0xFFFF5A5A) : const Color(0xFFFFD84D),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  OutlinedText(boss != null ? '${(level.goal - engine.score).clamp(0, level.goal)}' : '${engine.score}/${level.goal}', size: 14),
+                ]),
+              ]),
+            ),
+          ),
+        ]),
+        const SizedBox(height: 8),
+        Row(children: [
+          for (var i = 0; i < engine.maxLives; i++)
+            if (i < level.lives || i < engine.lives)
+              Padding(
+                padding: const EdgeInsets.only(right: 2),
+                child: Icon(
+                  i < engine.lives ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                  color: const Color(0xFFFF4D6D),
+                  size: 28,
+                  shadows: const [Shadow(blurRadius: 4, color: Colors.black38)],
+                ),
+              ),
+          const Spacer(),
+          if (engine.shield) const _Effect(ItemKind.shield, 1),
+          if (engine.magnetT > 0) _Effect(ItemKind.magnet, engine.magnetT / GameEngine.magnetTime),
+          if (engine.slowT > 0) _Effect(ItemKind.slow, engine.slowT / GameEngine.slowTime),
+          if (engine.doubleT > 0) _Effect(ItemKind.double, engine.doubleT / GameEngine.doubleTime),
         ]),
       ]),
     );
+  }
+}
+
+/// Poder activo: su icono con un aro que se va vaciando.
+class _Effect extends StatelessWidget {
+  const _Effect(this.kind, this.fraction);
+
+  final ItemKind kind;
+  final double fraction;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(left: 6),
+        child: Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(color: Colors.black.o(0.3), shape: BoxShape.circle),
+          child: Stack(alignment: Alignment.center, children: [
+            SizedBox(
+              width: 40,
+              height: 40,
+              child: CircularProgressIndicator(value: fraction.clamp(0.0, 1.0), strokeWidth: 3, color: Colors.white, backgroundColor: Colors.white24),
+            ),
+            ItemIcon(kind, size: 30),
+          ]),
+        ),
+      );
+}
+
+/// Cuenta atrás con el título del nivel y, al principio, el consejo de la mecánica nueva.
+class _Intro extends StatelessWidget {
+  const _Intro({required this.engine});
+
+  final GameEngine engine;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = engine.countdown;
+    final hint = engine.level.hint;
+    if (c > 0) {
+      final label = c > 1.8 ? '3' : (c > 1.0 ? '2' : (c > 0.4 ? '1' : '¡YA!'));
+      return Center(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          OutlinedText(engine.level.title, size: 20, textAlign: TextAlign.center),
+          const SizedBox(height: 10),
+          OutlinedText(label, size: 92),
+          if (hint != null) ...[
+            const SizedBox(height: 14),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: Text(
+                hint,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w800, shadows: [Shadow(blurRadius: 6, color: Colors.black87)]),
+              ),
+            ),
+          ],
+        ]),
+      );
+    }
+    return const SizedBox.shrink();
   }
 }

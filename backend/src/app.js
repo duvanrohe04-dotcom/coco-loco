@@ -29,13 +29,13 @@ async function hashPassword(password, salt) {
  * Crea el servidor HTTP de la API.
  * @param {object} opts
  * @param {string} opts.dbPath          ruta del archivo SQLite (o ':memory:')
- * @param {number} [opts.maxLevel=10]   niveles válidos para guardar progreso
+ * @param {number} [opts.maxLevel=20]   niveles válidos para guardar progreso
  * @param {boolean} [opts.trustProxy]   leer la IP de X-Forwarded-For (detrás de un proxy)
  * @param {number} [opts.authLimit=15]  intentos de login/registro por IP cada 10 min
  * @param {(line: string) => void} [opts.log]  registro de accesos (una línea por petición); null = silencio.
  *        Solo se anota método, ruta (sin query), estado, duración e IP: nunca cuerpos ni cabeceras.
  */
-export function createApp({ dbPath, maxLevel = 10, trustProxy = false, authLimit = 15, log = null }) {
+export function createApp({ dbPath, maxLevel = 20, trustProxy = false, authLimit = 15, log = null }) {
   const db = openDb(dbPath);
 
   const q = {

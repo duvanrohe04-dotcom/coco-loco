@@ -18,18 +18,18 @@ void paintBackground(Canvas canvas, Size size, LevelTheme theme, double t) {
     Paint()..shader = LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [theme.skyTop, theme.skyBottom]).createShader(skyRect),
   );
 
-  if (theme.night) _stars(canvas, size, seaTop, t);
-  _sun(canvas, size, seaTop, theme, t);
-  _clouds(canvas, size, seaTop, theme, t);
+  if (theme.night) paintStars(canvas, size, seaTop, t);
+  paintSun(canvas, size, seaTop, theme, t);
+  paintClouds(canvas, size, seaTop, theme, t);
   _sea(canvas, size, seaTop, sandTop, theme, t);
   _sand(canvas, size, sandTop, theme);
 
   final palmH = min(size.height * 0.55, 300.0);
-  _palm(canvas, Offset(size.width * 0.07, sandTop + 14), palmH, 36, t, theme, 0);
-  _palm(canvas, Offset(size.width * 0.93, sandTop + 14), palmH * 0.85, -30, t, theme, 2);
+  paintPalm(canvas, Offset(size.width * 0.07, sandTop + 14), palmH, 36, t, theme, 0);
+  paintPalm(canvas, Offset(size.width * 0.93, sandTop + 14), palmH * 0.85, -30, t, theme, 2);
 }
 
-void _stars(Canvas canvas, Size size, double seaTop, double t) {
+void paintStars(Canvas canvas, Size size, double seaTop, double t) {
   final rnd = Random(7);
   for (var i = 0; i < 70; i++) {
     final p = Offset(rnd.nextDouble() * size.width, rnd.nextDouble() * seaTop * 0.9);
@@ -38,7 +38,7 @@ void _stars(Canvas canvas, Size size, double seaTop, double t) {
   }
 }
 
-void _sun(Canvas canvas, Size size, double seaTop, LevelTheme theme, double t) {
+void paintSun(Canvas canvas, Size size, double seaTop, LevelTheme theme, double t) {
   final c = Offset(size.width * 0.74, seaTop * theme.sunHeight);
   final glowR = theme.night ? 90.0 : 120.0;
   canvas.drawCircle(
@@ -55,7 +55,7 @@ void _sun(Canvas canvas, Size size, double seaTop, LevelTheme theme, double t) {
   }
 }
 
-void _clouds(Canvas canvas, Size size, double seaTop, LevelTheme theme, double t) {
+void paintClouds(Canvas canvas, Size size, double seaTop, LevelTheme theme, double t) {
   final paint = Paint()..color = (theme.night ? const Color(0xFF8FA6D6) : Colors.white).o(theme.night ? 0.25 : 0.8);
   for (var i = 0; i < 4; i++) {
     final span = size.width + 260;
@@ -114,7 +114,7 @@ void _sand(Canvas canvas, Size size, double sandTop, LevelTheme theme) {
   );
 }
 
-void _palm(Canvas canvas, Offset base, double height, double lean, double t, LevelTheme theme, double seed) {
+void paintPalm(Canvas canvas, Offset base, double height, double lean, double t, LevelTheme theme, double seed) {
   final shade = theme.night ? 0.5 : 0.0;
   Color tone(Color c) => Color.lerp(c, Colors.black, shade)!;
 

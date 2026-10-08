@@ -7,7 +7,7 @@ const dataDir = process.env.DATA_DIR ?? join(process.cwd(), 'data');
 
 const server = createApp({
   dbPath: join(dataDir, 'cocoloco.sqlite'),
-  maxLevel: Number(process.env.MAX_LEVEL ?? 10),
+  maxLevel: Number(process.env.MAX_LEVEL ?? 20),
   trustProxy: process.env.TRUST_PROXY === '1',
   // Una línea por petición en la salida estándar (lo que muestra la pestaña Logs de Coolify).
   // LOG_REQUESTS=0 lo desactiva.

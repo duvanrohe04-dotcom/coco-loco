@@ -16,7 +16,7 @@ Variables de entorno:
 |---------------|-------------|-----------------------------------------------------------------------|
 | `PORT`        | `8787`      | Puerto HTTP                                                           |
 | `DATA_DIR`    | `./data`    | Carpeta del archivo SQLite (en producciÃ³n, un volumen persistente)    |
-| `MAX_LEVEL`   | `10`        | Niveles vÃ¡lidos al guardar progreso                                   |
+| `MAX_LEVEL`   | `20`        | Niveles vÃ¡lidos al guardar progreso                                   |
 | `TRUST_PROXY` | _(vacÃ­o)_   | Pon `1` detrÃ¡s de un proxy/balanceador para limitar por IP real       |
 
 ## Endpoints

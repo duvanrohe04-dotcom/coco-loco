@@ -8,6 +8,31 @@ lib/        App Flutter          backend/   API (ver backend/README.md)
 android/    Proyecto Android     dist/      APKs listas para instalar
 ```
 
+## Cómo se juega
+
+Vista pseudo-3D: los objetos vienen desde el horizonte hacia ti y tú te mueves de lado a lado
+(arrastrando el dedo, o con las flechas / A y D del teclado). **Atrapa los cocos, esquiva lo malo.**
+
+| Objeto | Qué hace |
+|---|---|
+| 🥥 Coco | +1 punto. Si pasa de largo pierdes una vida |
+| 🥥 Coco dorado | +3 puntos |
+| 🪨 Roca | Quita una vida (esquívala) |
+| 💣 Bomba | Quita una vida y te **aturde** un momento |
+| ❤️ Corazón | +1 vida (hasta 2 de más) |
+| 🛡️ Escudo | Bloquea el siguiente golpe |
+| 🧲 Imán | 7 s: los cocos vienen hacia ti |
+| ⏳ Reloj | 5 s de cámara lenta |
+| ✖️2 Moneda | 8 s de puntos dobles |
+
+- **Rachas:** cada 5 cocos seguidos sin fallar dan un punto extra.
+- **Oleadas:** cocos sueltos, filas de tres (se atrapan de golpe), zigzags y **paredes de rocas con un hueco**.
+- **20 niveles** en 7 escenarios (amanecer, playa, atardecer, tormenta, noche, volcán y aurora). Cada mecánica
+  nueva se presenta con un consejo. En los niveles **5, 10, 15 y 20** hay un **jefe** cuya vida baja al atrapar cocos.
+- **Estrellas:** 3 si no pierdes vidas, 2 si pierdes una, 1 en otro caso.
+- El generador de oleadas es **justo**: nunca pone dos premios seguidos imposibles de alcanzar (hay una prueba
+  automática que lo comprueba) y las distancias de los patrones se miden en píxeles, igual en móvil que en PC.
+
 ## Dos modos de juego
 
 - **Sin servidor** (por defecto): perfiles locales en el dispositivo, sin contraseña.
