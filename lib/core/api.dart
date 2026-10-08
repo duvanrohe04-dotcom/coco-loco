@@ -123,8 +123,10 @@ class Api {
       res = await http.Response.fromStream(await req.send().timeout(_timeout)).timeout(_timeout);
     } on TimeoutException {
       throw ApiException('El servidor tardó demasiado en responder');
-    } catch (_) {
-      throw ApiException('No se pudo conectar con el servidor. Revisa tu internet.');
+    } catch (e) {
+      // El tipo de error (SocketException, HandshakeException...) ayuda a distinguir
+      // sin conexión, DNS caído y certificado no confiable.
+      throw ApiException('No se pudo conectar con el servidor. Revisa tu internet. (${e.runtimeType})');
     }
 
     Map<String, dynamic> json = const {};

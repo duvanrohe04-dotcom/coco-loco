@@ -34,9 +34,12 @@ android {
 
     // Un solo APK para todos los celulares: solo ARM de 32 y 64 bits (ningún teléfono usa x86).
     // Quita librerías x86 sueltas que traen algunos plugins y que harían creer que hay soporte x86.
-    packaging {
-        jniLibs {
-            excludes += setOf("lib/x86/**", "lib/x86_64/**")
+    // Para probar en el emulador (x86): flutter build apk --target-platform android-x64 --android-project-arg=keepX86=true
+    if (!project.hasProperty("keepX86")) {
+        packaging {
+            jniLibs {
+                excludes += setOf("lib/x86/**", "lib/x86_64/**")
+            }
         }
     }
 
