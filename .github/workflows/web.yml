@@ -1,0 +1,62 @@
+name: Web (build para Coolify)
+
+# Compila la web en GitHub (memoria de sobra) y publica el resultado en la rama `web-dist`.
+# Coolify despliega esa rama con un Dockerfile ligero (solo nginx), sin compilar Flutter en el servidor.
+on:
+  push:
+    branches: [main]
+    # Solo cuando cambia algo que afecta a la web (no el backend ni Android).
+    paths:
+      - 'lib/**'
+      - 'web/**'
+      - 'pubspec.yaml'
+      - 'pubspec.lock'
+      - 'nginx.conf'
+      - 'deploy/web/**'
+      - '.github/workflows/web.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write # necesario para actualizar la rama web-dist
+
+concurrency:
+  group: web-dist
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.47.6'
+          cache: true
+
+      - run: flutter pub get
+
+      - name: Compilar web
+        env:
+          API_URL: ${{ vars.API_URL }}
+        run: |
+          URL="${API_URL:-https://cocoloco.sbs.mom}"
+          echo "Compilando con API_URL=$URL"
+          flutter build web --release --no-wasm-dry-run --dart-define=API_URL="$URL"
+
+      - name: Publicar en la rama web-dist
+        run: |
+          rm -rf "$RUNNER_TEMP/dist"
+          mkdir -p "$RUNNER_TEMP/dist"
+          cp -r build/web "$RUNNER_TEMP/dist/site"
+          cp deploy/web/Dockerfile nginx.conf "$RUNNER_TEMP/dist/"
+          cd "$RUNNER_TEMP/dist"
+          git init -q
+          git checkout -q -b web-dist
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Web compilada desde ${GITHUB_SHA::7}"
+          git remote add origin "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git"
+          git push --force origin web-dist
