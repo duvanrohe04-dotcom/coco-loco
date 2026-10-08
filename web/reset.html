@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Actualizando Coco Loco</title>
+  <style>
+    body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+           font-family: system-ui, sans-serif; color: #fff; text-align: center;
+           background: linear-gradient(#ff9a86, #ffe0a3 55%, #4aa8e8 55%); }
+    h1 { text-shadow: 0 3px 0 #1c3f7a, 0 0 8px #1c3f7a; }
+    p { font-weight: 600; text-shadow: 0 1px 4px #1c3f7a; }
+  </style>
+</head>
+<body>
+  <div>
+    <h1>COCO LOCO</h1>
+    <p id="msg">Actualizando el juego…</p>
+  </div>
+  <script>
+    // Borra los service workers y las cachés que dejó una versión vieja del juego y vuelve al inicio.
+    // Tus perfiles y tu progreso NO se tocan (están en otro almacenamiento).
+    (async () => {
+      try {
+        if ('serviceWorker' in navigator) {
+          const regs = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(regs.map((r) => r.unregister()));
+        }
+        if (window.caches) {
+          const keys = await caches.keys();
+          await Promise.all(keys.map((k) => caches.delete(k)));
+        }
+      } catch (e) {}
+      document.getElementById('msg').textContent = '¡Listo! Abriendo el juego…';
+      setTimeout(() => location.replace('/?actualizado=' + Date.now()), 600);
+    })();
+  </script>
+</body>
+</html>

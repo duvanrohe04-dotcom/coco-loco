@@ -63,6 +63,18 @@
     For more details:
     * https://docs.flutter.dev/platform-integration/web/initialization
   -->
+  <script>
+    // Esta versión no usa service worker. Si una versión vieja dejó uno (o su caché), se elimina para
+    // que el navegador no vuelva a mostrar el juego antiguo.
+    try {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function (rs) { rs.forEach(function (r) { r.unregister(); }); });
+      }
+      if (window.caches) {
+        caches.keys().then(function (ks) { ks.forEach(function (k) { caches.delete(k); }); });
+      }
+    } catch (e) {}
+  </script>
   <script src="flutter_bootstrap.js" async></script>
   <script>
     // Quita la pantalla de carga cuando Flutter ya pintó su primer cuadro.
