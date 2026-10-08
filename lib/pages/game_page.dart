@@ -37,14 +37,14 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
     _engine.onEvent = _onEvent;
     // Efectos listos antes de que empiece la cuenta atrás, y música de fondo mientras dura el nivel.
     Sound.instance.preload(Sfx.values.where((s) => s != Sfx.click));
-    Sound.instance.startMusic();
+    Sound.instance.startMusic(this);
     _ticker = createTicker(_tick)..start();
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    Sound.instance.stopMusic();
+    Sound.instance.stopMusic(this);
     _ticker.dispose();
     _engine.dispose();
     super.dispose();
@@ -67,7 +67,7 @@ class _GamePageState extends State<GamePage> with SingleTickerProviderStateMixin
       GameEvent.lose => Sfx.lose,
     };
     // Al terminar el nivel la música se apaga para que se oiga la fanfarria.
-    if (e == GameEvent.win || e == GameEvent.lose) Sound.instance.stopMusic();
+    if (e == GameEvent.win || e == GameEvent.lose) Sound.instance.stopMusic(this);
     Sound.instance.play(sfx);
 
     Future<void>? haptic;

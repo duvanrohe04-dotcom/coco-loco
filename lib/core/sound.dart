@@ -22,8 +22,9 @@ class Sound {
   final ValueNotifier<bool> enabled = ValueNotifier(true);
 
   SharedPreferences? _prefs;
-  final Map<Sfx, AudioPlayer> _players = {};
+  final Map<Sfx, Future<AudioPlayer?>> _players = {};
   AudioPlayer? _music;
+  Object? _musicOwner;
   bool _musicWanted = false;
   bool _musicPaused = false;
 
@@ -56,18 +57,20 @@ class Sound {
     }
   }
 
-  Future<AudioPlayer?> _player(Sfx kind) async {
-    final existing = _players[kind];
-    if (existing != null) return existing;
+  /// Un reproductor por efecto. Se guarda el Future (no el resultado) para que dos peticiones a la
+  /// vez (la precarga y el primer sonido) compartan el mismo reproductor en vez de crear uno de más.
+  Future<AudioPlayer?> _player(Sfx kind) => _players.putIfAbsent(kind, () => _createPlayer(kind));
+
+  Future<AudioPlayer?> _createPlayer(Sfx kind) async {
     try {
       final p = AudioPlayer();
       await p.setReleaseMode(ReleaseMode.stop);
       await p.setVolume(kind == Sfx.bomb || kind == Sfx.hit ? 1.0 : 0.85);
       await p.setSource(BytesSource(sfxWav(kind), mimeType: 'audio/wav'));
-      _players[kind] = p;
       return p;
     } catch (e) {
       debugPrint('Sonido (${kind.name}): $e');
+      _players.remove(kind); // si falló, la próxima vez se reintenta
       return null;
     }
   }
@@ -89,8 +92,11 @@ class Sound {
 
   // ---- Música ----
 
-  /// Empieza la música en bucle (si el sonido está activado).
-  void startMusic() {
+  /// Empieza la música en bucle (si el sonido está activado). [owner] es quien la pide (la pantalla
+  /// de juego): al pasar de un nivel a otro la pantalla nueva nace ANTES de que la vieja se destruya,
+  /// y solo el dueño actual puede apagarla, para que la vieja no calle la música del nivel nuevo.
+  void startMusic(Object owner) {
+    _musicOwner = owner;
     _musicWanted = true;
     _musicPaused = false;
     unawaited(_startMusic());
@@ -109,8 +115,10 @@ class Sound {
     });
   }
 
-  /// Detiene la música (al salir del nivel).
-  void stopMusic() {
+  /// Detiene la música (al salir del nivel). Se ignora si ya la pidió otra pantalla.
+  void stopMusic(Object owner) {
+    if (!identical(_musicOwner, owner)) return;
+    _musicOwner = null;
     _musicWanted = false;
     unawaited(_safe(() => _music?.stop()));
   }
