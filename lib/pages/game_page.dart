@@ -165,7 +165,7 @@ class _Hud extends StatelessWidget {
               ]),
               const SizedBox(height: 6),
               Row(children: [
-                const CoconutIcon(),
+                const HornIcon(),
                 const SizedBox(width: 8),
                 Expanded(
                   child: ClipRRect(
