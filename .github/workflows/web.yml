@@ -46,13 +46,14 @@ jobs:
           # El número de compilación cambia en cada ejecución: así cada despliegue es una versión distinta.
           flutter build web --release --no-wasm-dry-run --build-number="${{ github.run_number }}" --dart-define=API_URL="$URL"
 
-      - name: Sellar la versión (version.json)
+      - name: Sellar la versión (main.dart.<versión>.js y version.json)
         run: |
-          # La página compara este archivo (siempre sin caché) con la versión que tiene el navegador;
-          # si no coincide, se limpia todo lo guardado y se recarga. Así nadie se queda con una versión vieja.
-          printf '{"app_name":"coco_loco","version":"1.0.0","build_number":"%s","build":"%s"}\n' \
-            "${{ github.run_number }}" "${GITHUB_SHA::7}" > build/web/version.json
+          # Renombra el juego a main.dart.<versión>.js y apunta flutter_bootstrap.js a ese nombre. Sin esto el
+          # navegador reutiliza su copia guardada de main.dart.js y sigue ejecutando la versión vieja aunque el
+          # servidor ya tenga la nueva. Si Flutter cambia su formato, este paso FALLA (no publica a medias).
+          node deploy/web/stamp-web.mjs build/web "${GITHUB_SHA::7}" "${{ github.run_number }}"
           cat build/web/version.json
+          ls build/web | grep '^main\.dart\.'
 
       - name: Publicar en la rama web-dist
         run: |

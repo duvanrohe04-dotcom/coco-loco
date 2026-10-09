@@ -69,8 +69,19 @@ Si los secretos no existen, el workflow termina con un aviso amarillo y debes pu
 
 ### Cómo evita las versiones antiguas en los dispositivos
 
-Varias capas, para que no dependa de que el usuario haga nada:
+**La causa real** (reproducida en un navegador): Flutter genera siempre `main.dart.js` (el juego entero) con
+el mismo nombre, y nginx lo servía con caché de 7 días. Un navegador que ya lo tenía lo seguía ejecutando
+aunque el servidor ya tuviera la versión nueva, porque `index.html` y `flutter_bootstrap.js` llegaban frescos
+pero apuntaban a un archivo cuyo nombre no cambiaba. Ni un service worker ni borrar cachés desde la página
+lo arreglan: es la caché HTTP normal del navegador. (El service worker de Flutter 3.47 ni siquiera guarda nada.)
 
+La solución es que **el nombre del juego cambie en cada despliegue**; capas:
+
+0. **Versión en el nombre del archivo** (la clave). El workflow ejecuta `deploy/web/stamp-web.mjs`, que
+   renombra el juego a `main.dart.<commit>-<n>.js` y apunta `flutter_bootstrap.js` (siempre sin caché) a ese
+   nombre. Un nombre nuevo no puede estar en ninguna caché, así que **cada Redeploy se ve siempre**, sin
+   borrar nada ni tocar los datos del jugador. Si Flutter cambia su formato, el paso falla en vez de publicar
+   una web sin sellar (y `deploy/web/test-stamp.mjs` lo prueba en el CI).
 1. **Sin service worker.** La web ya no instala ninguno (`web/flutter_bootstrap.js`), así que el navegador
    no puede guardar una copia vieja del juego.
 2. **Limpiador para dispositivos viejos.** `flutter_service_worker.js` se publica como un "limpiador"
