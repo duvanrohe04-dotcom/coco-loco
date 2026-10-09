@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <!--
+    If you are serving your web app in a path other than the root, change the
+    href value below to reflect the base path you are serving from.
+
+    The path provided below has to start and end with a slash "/" in order for
+    it to work correctly.
+
+    For more details:
+    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+
+    This is a placeholder for base href that will be replaced by the value of
+    the `--base-href` argument provided to `flutter build`.
+  -->
+  <base href="/">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#4aa8e8">
+  <meta name="description" content="Coco Loco: atrapa los verbos en inglés, esquiva las demás palabras, sube de nivel y consigue todas las estrellas.">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Coco Loco">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>Coco Loco</title>
+  <link rel="manifest" href="manifest.json">
+
+  <!-- Pantalla de carga: se ve al instante, antes de que Flutter termine de arrancar. -->
+  <style>
+    html, body { margin: 0; height: 100%; background: #4aa8e8; }
+    #splash {
+      position: fixed; inset: 0; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 18px;
+      background: linear-gradient(#ff9a86, #ffe0a3 55%, #4aa8e8 55%);
+      font-family: system-ui, sans-serif; color: #fff; transition: opacity .35s;
+    }
+    #splash h1 { margin: 0; font-size: 44px; letter-spacing: 1px; text-shadow: 0 3px 0 #1c3f7a, 0 0 8px #1c3f7a; }
+    #splash .coco {
+      width: 46px; height: 46px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #a8743f, #4a2a12);
+      animation: bounce .7s ease-in-out infinite alternate;
+    }
+    @keyframes bounce { from { transform: translateY(-14px); } to { transform: translateY(10px); } }
+    #splash p { margin: 0; font-weight: 600; text-shadow: 0 1px 4px #1c3f7a; }
+  </style>
+</head>
+<body>
+  <div id="splash"><h1>COCO LOCO</h1><div class="coco"></div><p>Cargando…</p></div>
+  <!--
+    You can customize the "flutter_bootstrap.js" script.
+    This is useful to provide a custom configuration to the Flutter loader
+    or to give the user feedback during the initialization process.
+
+    For more details:
+    * https://docs.flutter.dev/platform-integration/web/initialization
+  -->
+  <script>
+    // Guardián de versión. Esta versión no usa service worker, pero un dispositivo que abrió una versión
+    // vieja puede conservar uno (o sus cachés) y seguir mostrando el juego antiguo. Aquí se hace dos cosas:
+    //  1) Siempre: elimina cualquier service worker y caché guardados.
+    //  2) Compara version.json (siempre sin caché) con la versión que este navegador vio por última vez;
+    //     si cambió, recarga UNA vez para traer los archivos nuevos. Los perfiles y el progreso no se tocan.
+    (function () {
+      var KEY = 'cocoloco_build';
+
+      function purge() {
+        var jobs = [];
+        try {
+          if ('serviceWorker' in navigator) {
+            jobs.push(navigator.serviceWorker.getRegistrations().then(function (rs) {
+              return Promise.all(rs.map(function (r) { return r.unregister(); }));
+            }));
+          }
+          if (window.caches) {
+            jobs.push(caches.keys().then(function (ks) {
+              return Promise.all(ks.map(function (k) { return caches.delete(k); }));
+            }));
+          }
+        } catch (e) {}
+        return Promise.all(jobs).catch(function () {});
+      }
+
+      var cleaned = purge();
+
+      fetch('version.json?t=' + Date.now(), { cache: 'no-store' })
+        .then(function (r) { return r.json(); })
+        .then(function (v) {
+          var current = String(v.build || '') + '#' + String(v.build_number || '') + '#' + String(v.version || '');
+          var stored = null;
+          try { stored = localStorage.getItem(KEY); } catch (e) {}
+          if (stored === current) return;
+          try { localStorage.setItem(KEY, current); } catch (e) { return; } // sin almacenamiento: no se recarga (evita bucles)
+          if (stored === null) return; // primera visita: no hay nada viejo que reemplazar
+          cleaned.then(function () { location.reload(); });
+        })
+        .catch(function () {});
+    })();
+  </script>
+  <script src="flutter_bootstrap.js" async></script>
+  <script>
+    // Quita la pantalla de carga cuando Flutter ya pintó su primer cuadro.
+    window.addEventListener('flutter-first-frame', function () {
+      var s = document.getElementById('splash');
+      if (!s) return;
+      s.style.opacity = '0';
+      setTimeout(function () { s.remove(); }, 400);
+    });
+  </script>
+</body>
+</html>
