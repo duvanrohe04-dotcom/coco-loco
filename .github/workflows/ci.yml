@@ -18,6 +18,29 @@ jobs:
       - run: flutter analyze
       - run: flutter test
 
+  # El autoactualizador de la web (corre dentro del contenedor) se prueba en Linux real, y la imagen debe construir.
+  web-updater:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Probar el autoactualizador
+        run: sh deploy/web/test-updater.sh
+      - name: La imagen de la web construye y arranca
+        run: |
+          set -e
+          ctx="$(mktemp -d)"
+          mkdir -p "$ctx/site"
+          echo '<html>ok</html>' > "$ctx/site/index.html"
+          echo '{"build":"test123"}' > "$ctx/site/version.json"
+          cp deploy/web/Dockerfile deploy/web/updater.sh deploy/web/40-self-update.sh nginx.conf "$ctx/"
+          docker build -t web-test "$ctx"
+          docker run -d --name web-test -e UPDATE_INTERVAL=3600 -p 8080:80 web-test
+          sleep 30
+          curl -fsS http://127.0.0.1:8080/healthz
+          curl -fsS http://127.0.0.1:8080/version.json
+          docker logs web-test 2>&1 | grep -q "vigilando" || { docker logs web-test; exit 1; }
+          docker rm -f web-test
+
   backend:
     runs-on: ubuntu-latest
     defaults:

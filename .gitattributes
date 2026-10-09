@@ -1,2 +1,7 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Los scripts y la imagen de la web corren en Linux: nunca deben llevar saltos de línea de Windows (\r).
+*.sh text eol=lf
+deploy/web/Dockerfile text eol=lf
+nginx.conf text eol=lf

@@ -33,11 +33,29 @@ La URL del backend se incrusta al compilar en GitHub: por defecto `https://cocol
 cambiarla crea la variable **`API_URL`** en *GitHub → Settings → Secrets and variables → Actions →
 Variables* y vuelve a lanzar el workflow (*Actions → Web → Run workflow*).
 
-### Despliegue automático (para que nadie se quede con una versión vieja)
+### El servidor se actualiza solo (sin Redeploy)
 
-Sin esto hay que pulsar *Redeploy* a mano después de cada cambio, y mientras no se haga el servidor
-sigue sirviendo la versión anterior. Con dos secretos, el workflow le pide a Coolify que se redespliegue
-solo cuando termina de compilar:
+La imagen de la web lleva un **autoactualizador** (`deploy/web/updater.sh`): cada 2 minutos mira qué
+versión hay en la rama `web-dist` de GitHub y, si es distinta de la que sirve, descarga la nueva y la
+cambia de golpe (un renombrado de carpeta, sin dejar la web a medias). Resultado: **subes a `main` y,
+a los pocos minutos (unos 5-7), el link ya muestra la versión nueva**, aunque nadie pulse nada en Coolify.
+
+- Esto también arregla el caso de pulsar *Redeploy* demasiado pronto (antes de que GitHub termine de
+  compilar): el servidor se pone al día solo en la siguiente vuelta.
+- Si GitHub no responde o el paquete está incompleto, se queda con la web actual sin tocarla.
+- Hay que hacer **un único Redeploy manual** cuando se publique esta imagen por primera vez (para que el
+  contenedor tenga el autoactualizador). Después no hace falta nunca más.
+- Variables opcionales en Coolify: `SELF_UPDATE=0` (apagarlo), `UPDATE_INTERVAL` (segundos, 120 por
+  defecto), `UPDATE_REPO` / `UPDATE_BRANCH` (otro repositorio o rama).
+- Requiere que el repositorio sea público (lee `web-dist` sin credenciales).
+- Se prueba en cada push (`deploy/web/test-updater.sh`, en el CI).
+- Los datos de los jugadores no se pierden: el progreso web vive en el navegador, y las cuentas en línea
+  en la base de datos del backend (otra app, con su propio volumen).
+
+### Despliegue automático opcional (más rápido)
+
+Si además quieres que el servidor se actualice **al instante** (en vez de esperar al autoactualizador),
+con dos secretos el workflow le pide a Coolify que se redespliegue solo cuando termina de compilar:
 
 1. Coolify → **Keys & Tokens → API tokens** → crea un token con permiso de *deploy* y cópialo.
 2. En la app de la web (rama `web-dist`) → **Webhooks** → copia la **Deploy Webhook** (algo como
