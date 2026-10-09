@@ -43,7 +43,16 @@ jobs:
         run: |
           URL="${API_URL:-https://cocoloco.sbs.mom}"
           echo "Compilando con API_URL=$URL"
-          flutter build web --release --no-wasm-dry-run --dart-define=API_URL="$URL"
+          # El número de compilación cambia en cada ejecución: así cada despliegue es una versión distinta.
+          flutter build web --release --no-wasm-dry-run --build-number="${{ github.run_number }}" --dart-define=API_URL="$URL"
+
+      - name: Sellar la versión (version.json)
+        run: |
+          # La página compara este archivo (siempre sin caché) con la versión que tiene el navegador;
+          # si no coincide, se limpia todo lo guardado y se recarga. Así nadie se queda con una versión vieja.
+          printf '{"app_name":"coco_loco","version":"1.0.0","build_number":"%s","build":"%s"}\n' \
+            "${{ github.run_number }}" "${GITHUB_SHA::7}" > build/web/version.json
+          cat build/web/version.json
 
       - name: Publicar en la rama web-dist
         run: |
@@ -62,3 +71,18 @@ jobs:
           git commit -q -m "Web compilada desde ${GITHUB_SHA::7}"
           git remote add origin "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git"
           git push --force origin web-dist
+
+      - name: Redesplegar en Coolify
+        # Sin este paso hay que pulsar "Redeploy" a mano después de cada cambio (y se olvida).
+        # Configura dos secretos del repositorio (ver DEPLOY.md): COOLIFY_DEPLOY_URL y COOLIFY_TOKEN.
+        env:
+          COOLIFY_DEPLOY_URL: ${{ secrets.COOLIFY_DEPLOY_URL }}
+          COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+        run: |
+          if [ -z "$COOLIFY_DEPLOY_URL" ] || [ -z "$COOLIFY_TOKEN" ]; then
+            echo "::warning::Faltan los secretos COOLIFY_DEPLOY_URL y COOLIFY_TOKEN: pulsa Redeploy a mano en Coolify (o configúralos, ver DEPLOY.md)."
+            exit 0
+          fi
+          curl -fsS --retry 3 --retry-delay 5 -H "Authorization: Bearer $COOLIFY_TOKEN" "$COOLIFY_DEPLOY_URL"
+          echo
+          echo "Despliegue solicitado a Coolify."

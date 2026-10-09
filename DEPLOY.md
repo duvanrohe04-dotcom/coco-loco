@@ -33,8 +33,38 @@ La URL del backend se incrusta al compilar en GitHub: por defecto `https://cocol
 cambiarla crea la variable **`API_URL`** en *GitHub → Settings → Secrets and variables → Actions →
 Variables* y vuelve a lanzar el workflow (*Actions → Web → Run workflow*).
 
-**Cada vez que cambies el juego**: haz push a `main`, espera al workflow y pulsa *Redeploy* en Coolify
-(o activa el webhook de GitHub para que sea automático, apuntando a la rama `web-dist`).
+### Despliegue automático (para que nadie se quede con una versión vieja)
+
+Sin esto hay que pulsar *Redeploy* a mano después de cada cambio, y mientras no se haga el servidor
+sigue sirviendo la versión anterior. Con dos secretos, el workflow le pide a Coolify que se redespliegue
+solo cuando termina de compilar:
+
+1. Coolify → **Keys & Tokens → API tokens** → crea un token con permiso de *deploy* y cópialo.
+2. En la app de la web (rama `web-dist`) → **Webhooks** → copia la **Deploy Webhook** (algo como
+   `http://TU_SERVIDOR:8000/api/v1/deploy?uuid=...&force=false`).
+3. GitHub → repositorio → *Settings → Secrets and variables → Actions → Secrets*:
+   - `COOLIFY_DEPLOY_URL` = la URL del paso 2
+   - `COOLIFY_TOKEN` = el token del paso 1
+
+A partir de ahí: **haces push a `main` y listo** (compila, publica en `web-dist` y Coolify despliega).
+Si los secretos no existen, el workflow termina con un aviso amarillo y debes pulsar *Redeploy* a mano.
+
+### Cómo evita las versiones antiguas en los dispositivos
+
+Varias capas, para que no dependa de que el usuario haga nada:
+
+1. **Sin service worker.** La web ya no instala ninguno (`web/flutter_bootstrap.js`), así que el navegador
+   no puede guardar una copia vieja del juego.
+2. **Limpiador para dispositivos viejos.** `flutter_service_worker.js` se publica como un "limpiador"
+   (`deploy/web/cleanup_service_worker.js`): los dispositivos que ya tenían el service worker viejo lo
+   descargan, borran su caché, se desinstalan y recargan.
+3. **Guardián de versión** (`web/index.html`). Al abrir, compara `version.json` (siempre sin caché, con
+   un número distinto en cada compilación) con la versión que el navegador vio por última vez; si cambió,
+   limpia service workers y cachés y recarga una vez. Perfiles y progreso no se tocan.
+4. **nginx** (`nginx.conf`): `index.html`, `version.json` y los `.js` nunca se sirven de caché sin
+   preguntar al servidor si cambiaron; solo fuentes e imágenes se guardan una semana.
+5. **`/reset.html`**: página de rescate. Si alguien aún ve el juego antiguo, abrir
+   `https://TU_DOMINIO/reset.html` borra todo lo guardado y lo lleva al juego nuevo.
 
 > Alternativa si tu servidor tiene memoria de sobra (≥ 4 GB libres): el `Dockerfile` de la raíz
 > compila Flutter dentro de Docker (Base Directory `/`, rama `main`, variable de build `API_URL`).
