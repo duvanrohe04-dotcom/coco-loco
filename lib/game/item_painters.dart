@@ -6,7 +6,83 @@ import '../core/color_ext.dart';
 import 'game_engine.dart';
 
 /// Dibuja un objeto del juego centrado en [c], con radio [r] (px).
-void paintItem(Canvas canvas, Item item, Offset c, double r) => paintKind(canvas, item.kind, c, r, item.rot);
+void paintItem(Canvas canvas, Item item, Offset c, double r) {
+  final word = item.word;
+  if (word != null && (item.kind == ItemKind.coconut || item.kind == ItemKind.golden || item.kind == ItemKind.rock)) {
+    paintWord(canvas, word, c, r, item.kind);
+  } else {
+    paintKind(canvas, item.kind, c, r, item.rot);
+  }
+}
+
+// ---- Palabras (verbos y no-verbos) --------------------------------------------
+
+final Map<String, TextPainter> _wordCache = {};
+
+/// Texto de la palabra a un tamaño fijo (se escala con el canvas); se guarda para no medirlo en cada cuadro.
+TextPainter _wordText(String word) => _wordCache.putIfAbsent(
+      word,
+      () => TextPainter(
+        text: TextSpan(text: word, style: const TextStyle(fontSize: 40, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 0.5)),
+        textDirection: TextDirection.ltr,
+      )..layout(),
+    );
+
+/// Una palabra dentro de una etiqueta. Verbo = verde (dorado si da 3 puntos); no-verbo = rojo con una X.
+void paintWord(Canvas canvas, String word, Offset c, double r, ItemKind kind) {
+  final text = _wordText(word);
+  final k = r * 1.0 / 40; // r es el radio del objeto: la letra mide ~r de alto
+  final w = text.width * k, h = text.height * k;
+  final bad = kind == ItemKind.rock;
+  final golden = kind == ItemKind.golden;
+  final padX = r * 0.5, padY = r * 0.22;
+  final rect = Rect.fromCenter(center: c, width: w + padX * 2, height: h + padY * 2);
+  final rrect = RRect.fromRectAndRadius(rect, Radius.circular(rect.height / 2));
+
+  final top = bad ? const Color(0xFFFF6B6B) : (golden ? const Color(0xFFFFE066) : const Color(0xFF52D68A));
+  final bottom = bad ? const Color(0xFFC62828) : (golden ? const Color(0xFFE09A00) : const Color(0xFF1E9E5A));
+  final edge = bad ? const Color(0xFF6B0F0F) : (golden ? const Color(0xFF7A4B00) : const Color(0xFF0E5A33));
+
+  if (golden) {
+    canvas.drawCircle(
+      c,
+      r * 2.0,
+      Paint()..shader = RadialGradient(colors: [const Color(0xFFFFE680).o(0.6), const Color(0x00FFE680)]).createShader(Rect.fromCircle(center: c, radius: r * 2.0)),
+    );
+  }
+  canvas.drawRRect(rrect.shift(Offset(0, r * 0.08)), Paint()..color = Colors.black.o(0.25));
+  canvas.drawRRect(rrect, Paint()..shader = LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [top, bottom]).createShader(rect));
+  canvas.drawRRect(rrect, _outline(edge, max(1.2, r * 0.08)));
+  // Brillo superior.
+  canvas.drawRRect(
+    RRect.fromRectAndRadius(Rect.fromLTWH(rect.left + r * 0.25, rect.top + r * 0.07, rect.width - r * 0.5, rect.height * 0.32), Radius.circular(rect.height)),
+    Paint()..color = Colors.white.o(0.28),
+  );
+
+  canvas.save();
+  canvas.translate(c.dx - w / 2, c.dy - h / 2);
+  canvas.scale(k);
+  // Contorno oscuro para que se lea sobre cualquier fondo.
+  final outline = TextPainter(
+    text: TextSpan(text: word, style: TextStyle(fontSize: 40, fontWeight: FontWeight.w900, letterSpacing: 0.5, foreground: Paint()..style = PaintingStyle.stroke..strokeWidth = 7..strokeJoin = StrokeJoin.round..color = edge)),
+    textDirection: TextDirection.ltr,
+  )..layout();
+  outline.paint(canvas, Offset.zero);
+  text.paint(canvas, Offset.zero);
+  canvas.restore();
+
+  if (bad) {
+    // Marca de "X" para que se distinga de un verbo aunque no se lea la palabra.
+    final bc = Offset(rect.right - r * 0.1, rect.top + r * 0.05);
+    final br = r * 0.42;
+    canvas.drawCircle(bc, br, Paint()..color = Colors.white);
+    canvas.drawCircle(bc, br, _outline(edge, max(1.2, r * 0.07)));
+    final x = br * 0.5;
+    final stroke = _outline(const Color(0xFFC62828), max(1.8, r * 0.14));
+    canvas.drawLine(bc.translate(-x, -x), bc.translate(x, x), stroke);
+    canvas.drawLine(bc.translate(-x, x), bc.translate(x, -x), stroke);
+  }
+}
 
 void paintKind(Canvas canvas, ItemKind kind, Offset c, double r, double rot) {
   switch (kind) {

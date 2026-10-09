@@ -11,7 +11,7 @@ android/    Proyecto Android     dist/      APKs listas para instalar
 ## Cómo se juega
 
 Vista pseudo-3D: los objetos vienen desde el horizonte hacia ti y tú te mueves de lado a lado
-(arrastrando el dedo, o con las flechas / A y D del teclado). **Atrapa los cocos, esquiva lo malo.**
+(arrastrando el dedo, o con las flechas / A y D del teclado). **Atrapa los verbos en inglés (eat, jump, sing…) y esquiva las palabras que NO son verbos (las que llevan una X): si las atrapas pierdes una vida.** Las listas de palabras están en `lib/game/words.dart`.
 
 | Objeto | Qué hace |
 |---|---|

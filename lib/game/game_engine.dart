@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:flutter/foundation.dart';
 
 import 'level.dart';
+import 'words.dart';
 
 /// Objetos que vienen hacia el jugador. Los nombres `coconut` y `rock` se conservan (coco y roca).
 enum ItemKind { coconut, golden, rock, bomb, heart, shield, magnet, slow, double }
@@ -16,9 +17,13 @@ enum GameEvent { catchCoco, catchGolden, powerUp, blocked, hitRock, hitBomb, mis
 /// Un objeto en el mundo 3D: [lane] es su carril (-1 izquierda .. 1 derecha) y [z] su distancia
 /// (1 = en el horizonte, 0 = llega al jugador).
 class Item {
-  Item({required this.kind, required this.lane, this.z = 1, this.spin = 0, this.startHeight = 120});
+  Item({required this.kind, required this.lane, this.z = 1, this.spin = 0, this.startHeight = 120, this.word});
 
   final ItemKind kind;
+
+  /// Palabra en inglés que muestra el objeto: un verbo en los "cocos" (hay que atraparlo) o una
+  /// palabra que NO es verbo en las "rocas" (atraparla quita una vida). Null en el resto de objetos.
+  final String? word;
   double lane;
   double z;
   double rot = 0;
@@ -82,8 +87,9 @@ class GameEngine extends ChangeNotifier {
   static const double slowFactor = 0.55;
 
   // Medidas de los patrones, en píxeles a la altura del jugador.
-  static const double rowSpacingPx = 44, zigzagAmpPx = 110, wallMinPx = 90, wallMaxPx = 140;
+  static const double zigzagAmpPx = 110, wallMinPx = 90, wallMaxPx = 140;
   static const double zigzagStep = 0.45; // segundos entre cocos de un zigzag
+  static const double rowStep = 0.32; // segundos entre los verbos de una racha en línea
 
   final Level level;
   final Random _rnd;
@@ -300,6 +306,11 @@ class GameEngine extends ChangeNotifier {
       lane: lane.clamp(-0.95, 0.95).toDouble(),
       spin: (_rnd.nextDouble() - 0.5) * 6,
       startHeight: 90 + _rnd.nextDouble() * 120,
+      word: switch (kind) {
+        ItemKind.coconut || ItemKind.golden => Words.verb(_rnd, level.number),
+        ItemKind.rock => Words.other(_rnd, level.number),
+        _ => null,
+      },
     );
     items.add(item);
     if (item.isHazard) {
@@ -368,14 +379,15 @@ class GameEngine extends ChangeNotifier {
   // Las distancias de los patrones se definen en PÍXELES (no en carriles): así son igual de justas
   // en un móvil estrecho que en una pantalla ancha, donde un carril mide mucho más.
 
-  /// Fila de tres cocos juntos: se atrapan de una vez poniéndose en el centro.
+  /// Racha de tres verbos que bajan uno tras otro por el MISMO carril: se atrapan los tres sin moverse.
+  /// (Antes iban lado a lado, pero las etiquetas con palabras son anchas y se montaban unas sobre otras.)
   void _row() {
     final c = _goodLane().clamp(-0.6, 0.6).toDouble();
-    final d = rowSpacingPx / fieldHalfW; // menor que catchRadius: desde el centro se atrapan los tres
-    for (final k in [-d, 0.0, d]) {
-      _add(ItemKind.coconut, c + k);
+    for (var i = 0; i < 3; i++) {
+      _queue.add(_Pending(i * rowStep, c, ItemKind.coconut));
     }
     _lastGoodLane = c;
+    _spawnTimer = -2 * rowStep; // nada más hasta que termine la racha
   }
 
   /// Cuatro cocos que alternan de lado: obliga a moverse rápido (pero se puede con el teclado).
@@ -498,7 +510,7 @@ class GameEngine extends ChangeNotifier {
       return;
     }
     if (stunned) stun = stunTime;
-    _loseLife(at, stunned ? '¡Bomba!' : '¡Ay!', stunned ? GameEvent.hitBomb : GameEvent.hitRock);
+    _loseLife(at, stunned ? '¡Bomba!' : '¡No es verbo!', stunned ? GameEvent.hitBomb : GameEvent.hitRock);
     shake = stunned ? 1 : 0.6;
   }
 

@@ -97,7 +97,7 @@ class _LoginPageState extends State<LoginPage> {
                   constraints: const BoxConstraints(maxWidth: 440),
                   child: Column(mainAxisSize: MainAxisSize.min, children: [
                     const OutlinedText('COCO LOCO', size: 44),
-                    const OutlinedText('atrapa la lluvia de cocos', size: 18),
+                    const OutlinedText('atrapa los verbos en inglés', size: 18),
                     const SizedBox(height: 18),
                     Container(
                       padding: const EdgeInsets.all(20),

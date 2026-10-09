@@ -180,11 +180,11 @@ const levelCount = 20;
 double _lerp(double a, double b, double t) => a + (b - a) * t.clamp(0.0, 1.0);
 
 const _hints = <int, String>{
-  1: 'Arrastra el dedo (o usa las flechas del teclado) para atrapar los cocos',
-  2: '¡Cuidado con las rocas! Esquívalas o pierdes una vida',
+  1: 'Atrapa los VERBOS en inglés (eat, jump, sing…). Arrastra el dedo o usa las flechas',
+  2: '¡Cuidado! Las palabras con una X NO son verbos: si las atrapas pierdes una vida',
   3: 'Los objetos con brillo son poderes: ¡recógelos!',
-  4: 'Las paredes de rocas tienen un hueco: pasa por ahí',
-  5: '¡JEFE! Atrapa cocos para dejarlo sin vida',
+  4: 'Las paredes de palabras X tienen un hueco con un verbo: pasa por ahí',
+  5: '¡JEFE! Atrapa verbos para dejarlo sin vida',
   8: 'Las bombas te aturden un momento: ¡esquívalas!',
 };
 

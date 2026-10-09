@@ -247,7 +247,7 @@ class _Hud extends StatelessWidget {
                 ]),
                 const SizedBox(height: 6),
                 Row(children: [
-                  if (boss != null) const Text('👾', style: TextStyle(fontSize: 18)) else const CoconutIcon(),
+                  if (boss != null) const Text('👾', style: TextStyle(fontSize: 18)) else const _VerbBadge(),
                   const SizedBox(width: 8),
                   Expanded(
                     child: ClipRRect(
@@ -290,6 +290,18 @@ class _Hud extends StatelessWidget {
       ]),
     );
   }
+}
+
+/// Icono de la barra de progreso: los puntos se ganan con verbos.
+class _VerbBadge extends StatelessWidget {
+  const _VerbBadge();
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
+        decoration: BoxDecoration(color: const Color(0xFF52D68A), borderRadius: BorderRadius.circular(10), border: Border.all(color: const Color(0xFF0E5A33), width: 1.5)),
+        child: const Text('verb', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w900)),
+      );
 }
 
 /// Poder activo: su icono con un aro que se va vaciando.

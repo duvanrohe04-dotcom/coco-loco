@@ -331,14 +331,22 @@ void main() {
       );
       for (final size in const [Size(390, 844), Size(800, 451), Size(1400, 800)]) {
         final e = GameEngine(rowLevel, random: Random(2), startDelay: 0)..resize(size);
-        e.update(0.05);
-        e.update(0.05);
-        expect(e.items.length, 3);
-        final lanes = e.items.map((i) => i.lane).toList()..sort();
-        final middle = lanes[1];
-        for (final lane in lanes) {
-          expect(((lane - middle) * e.fieldHalfW).abs(), lessThanOrEqualTo(GameEngine.catchRadius), reason: 'en $size');
+        // La racha sale de uno en uno: hay que dejar pasar el tiempo para que aparezcan los tres.
+        final seen = <Item>[];
+        for (var i = 0; i < 16; i++) {
+          // 0,8 s: lo que dura una racha (la siguiente empieza después).
+          e.update(0.05);
+          for (final it in e.items) {
+            if (!seen.contains(it)) seen.add(it);
+          }
         }
+        expect(seen.length, 3, reason: 'en $size');
+        // Mismo carril: se atrapan los tres sin moverse (y las etiquetas con palabras no se montan).
+        expect(seen.map((i) => i.lane).toSet().length, 1, reason: 'en $size');
+        // Y separados en el tiempo: ninguno nace encima de otro.
+        final zs = seen.map((i) => i.z).toList()..sort();
+        expect(zs[1] - zs[0], greaterThan(0.05), reason: 'en $size');
+        expect(zs[2] - zs[1], greaterThan(0.05), reason: 'en $size');
       }
     });
   });
