@@ -1,0 +1,3 @@
+﻿# Herramientas de desarrollo en Python (no forman parte del juego).
+# Instalar:  .venv\Scripts\python -m pip install -r requirements-dev.txt
+PyYAML>=6.0   # validar los workflows de .github/workflows

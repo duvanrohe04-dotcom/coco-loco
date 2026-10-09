@@ -57,3 +57,6 @@ android/*.keystore
 backend/data/
 backend/node_modules/
 .claude/
+
+# Entorno virtual de Python
+.venv/
